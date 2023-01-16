@@ -1,0 +1,30 @@
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class FOW_PP : MonoBehaviour
+{
+    public Material material;
+    private new Camera camera;
+    private new Transform transform;
+
+    private void Awake()
+    {
+        camera = GetComponent<Camera>();
+        transform = GetComponent<Transform>();
+    }
+
+    void OnRenderImage(RenderTexture source, RenderTexture destination)
+    {
+        // NOTE: code was ported from: https://gamedev.stackexchange.com/questions/131978/shader-reconstructing-position-from-depth-in-vr-through-projection-matrix
+
+        var p = GL.GetGPUProjectionMatrix(camera.projectionMatrix, false);
+        p[2, 3] = p[3, 2] = 0.0f;
+        p[3, 3] = 1.0f;
+        var clipToWorld = Matrix4x4.Inverse(p * camera.worldToCameraMatrix) * Matrix4x4.TRS(new Vector3(0, 0, -p[2, 2]), Quaternion.identity, Vector3.one);
+        material.SetMatrix("clipToWorld", clipToWorld);
+        material.SetTexture("_MainTex", source);
+        
+        Graphics.Blit(source, destination, material);
+    }
+}

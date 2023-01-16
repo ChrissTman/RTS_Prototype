@@ -1,0 +1,76 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+struct UnitData
+{
+	float2 pos;
+	int team;
+	float lineOfSight;
+	float attackRadius;
+	int sector_id;
+};
+struct SectorData
+{
+	float2 pos;
+	int level;
+};
+
+int _SectorsSize;
+RWStructuredBuffer<SectorData> _Sectors;
+
+int _AllySize;
+RWStructuredBuffer<UnitData> _AllyData;
+
+int _EnemySize;
+RWStructuredBuffer<UnitData> _EnemyData;
+
+
+[numthreads(16,1,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+	SectorData sector = _Sectors[id.x];
+
+	int level = 0;
+
+	for(int i = 0; i < _AllySize; i++)
+	{
+		UnitData ally = _AllyData[i];
+
+		half dis = distance(ally.pos, sector.pos);
+
+		if(dis <= ally.attackRadius)
+			level = 2;
+		else if(dis <= ally.lineOfSight && level != 1)
+			level = 1;
+	}
+	
+	sector.level = level;
+
+    _Sectors[id.x] = sector;
+}
+
+
+//int calcColor(int x)
+//{
+//	int colorIndex = 0;
+//		
+//	[loop]
+//	for (int index = 0; index < _AllyDataSize; index++)
+//	{
+//		vector data = _AllyData[index];				
+//		
+//		half dis = distance(data.xy, xy);
+//		half attackRadius = data.z;
+//		half detectRadius = data.w;
+//		if(dis <= attackRadius)
+//		{
+//			colorIndex = 1;
+//		}
+//		else if(dis <= detectRadius && colorIndex != 1)
+//		{
+//			colorIndex = 2;
+//		}
+//	}
+//
+//	return colorIndex;
+//}
